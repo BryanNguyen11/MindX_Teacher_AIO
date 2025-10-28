@@ -1,0 +1,71 @@
+/* Minimal utilities to support provided AuthForm Tailwind-like classes */
+
+/* Sizes */
+.w-16 { width: 4rem; }
+.h-16 { height: 4rem; }
+.max-w-md { max-width: 28rem; }
+
+/* Rounded */
+.rounded-2xl { border-radius: 1rem; }
+.rounded-3xl { border-radius: 1.5rem; }
+
+/* Colors */
+.bg-white { background-color: #ffffff; }
+.text-white { color: #ffffff; }
+.text-black { color: #111827; }
+.text-emerald-600 { color: #059669; }
+.text-emerald-500 { color: #10b981; }
+.text-white\/90 { color: rgba(255,255,255,0.9); }
+.text-white\/95 { color: rgba(255,255,255,0.95); }
+.text-gray-500 { color: #6b7280; }
+.text-gray-600 { color: #4b5563; }
+.text-gray-700 { color: #374151; }
+.border-gray-100 { border-color: #f3f4f6; }
+.border-gray-200 { border-color: #e5e7eb; }
+/* Ivory tone for light buttons and tabs */
+.bg-ivory { background-color: #f8f5ef; }
+.hover\:bg-ivory\/90:hover { background-color: rgba(248, 245, 239, 0.9); }
+
+/* Shadows (approximate Tailwind) */
+.shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1); }
+
+/* Gradients */
+.bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-from, rgba(255,255,255,0.15)), var(--tw-gradient-to, transparent)); }
+.bg-gradient-to-r { background-image: linear-gradient(to right, var(--tw-gradient-from, rgba(255,255,255,0.15)), var(--tw-gradient-to, transparent)); }
+.from-emerald-400 { --tw-gradient-from: #34d399; }
+.to-emerald-300 { --tw-gradient-to: #6ee7b7; }
+.from-emerald-300 { --tw-gradient-from: #6ee7b7; }
+.to-teal-200 { --tw-gradient-to: #99f6e4; }
+.hover\:from-emerald-500:hover { --tw-gradient-from: #10b981; }
+.hover\:to-teal-600:hover { --tw-gradient-to: #0d9488; }
+.hover\:to-teal-400:hover { --tw-gradient-to: #2dd4bf; }
+
+/* Hover gradient overrides (escape colon) */
+/* old red hover classes intentionally removed */
+
+/* Active tab variants using data-state attribute */
+.data-\[state\=active\]\:bg-emerald-500[data-state="active"] { background-color: #10b981; }
+.data-\[state\=active\]\:bg-emerald-400[data-state="active"] { background-color: #34d399; }
+.data-\[state\=active\]\:bg-ivory[data-state="active"] { background-color: #f8f5ef; }
+.data-\[state\=active\]\:text-white[data-state="active"] { color: #ffffff; }
+.data-\[state\=active\]\:text-black[data-state="active"] { color: #111827; }
+
+/* Layout & spacing */
+.grid { display: grid; }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-8 { margin-bottom: 2rem; }
+.p-8 { padding: 2rem; }
+
+/* Focus ring & border helpers used on Input */
+.focus\:ring-emerald-500:focus { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35); outline: none; }
+.focus\:border-emerald-500:focus { border-color: #10b981; }
+.focus\:ring-emerald-400\/40:focus { box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.4); outline: none; }
+.focus\:border-emerald-400:focus { border-color: #34d399; }
+.focus\:ring-black\/30:focus { box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.3); outline: none; }
+.focus\:border-black:focus { border-color: #111827; }
+
+/* Space-y helpers for vertical stacks */
+.space-y-2 > :not(:last-child) { margin-bottom: 0.5rem; }
+.space-y-4 > :not(:last-child) { margin-bottom: 1rem; }
