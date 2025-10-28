@@ -2,6 +2,24 @@ services:
   - type: web
     name: teacher-aio-server
     env: node
+    # IMPORTANT: The server code is inside this subfolder of the repo
+    rootDir: TeacherAIO_ver2/server
+    plan: free
+    autoDeploy: true
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SHEET_ID
+        sync: false
+services:
+  - type: web
+    name: teacher-aio-server
+    env: node
     rootDir: server
     plan: free
     autoDeploy: true
