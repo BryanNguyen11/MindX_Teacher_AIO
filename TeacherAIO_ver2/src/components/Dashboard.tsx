@@ -271,54 +271,7 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
                   </div>
                 </div>
               )}
-              {/* Cải thiện điểm: hiển thị nút tới bài luyện tập nếu điểm < 10 */}
-              {advRows.length > 0 && (
-                <div className="mt-4 bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30">
-                  <div className="text-black/80 text-sm mb-3">Cải thiện điểm</div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {(() => {
-                      const row = advRows[0] as Record<string, any>;
-                      const toNum = (v: any) => {
-                        const m = String(v ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
-                        return m ? Number(m[0]) : NaN;
-                      };
-                       const lessonLinks: { label: string; url: string }[] = [
-                         { label: 'Lesson 1\n[kỹ năng trao đổi với PHHS]', url: 'https://forms.gle/HErPEqqNUoyWX5aP9' },
-                         { label: 'Lesson 2\n[Kỹ năng quan sát học viên]', url: 'https://docs.google.com/forms/d/e/1FAIpQLSfnUtOUnGBzNyfGIV1tvl_XO9UbVyHMDedHB1sznVwL1Fd_2g/viewform' },
-                         { label: 'Lesson 3\n[Kỹ năng trao đổi với học viên]', url: 'https://docs.google.com/forms/d/e/1FAIpQLSdemZdhF4zmXvPAyOQRZvVZyYw_u4DOuYLBStXOKUDqIb8GUg/viewform' },
-                         { label: 'Lesson 4\n[Định hướng & tạo động lực trong học tập]', url: 'https://forms.gle/QqavsiUDDrJWWtVK8' },
-                         { label: 'Lesson 5\n[Hướng dẫn tổ chức học sinh làm dự án cuối khóa]', url: 'https://forms.gle/iVTzyPXyJDFXV4hn6' },
-                         { label: 'Lesson 6\nHướng dẫn xây dựng bài giảng, giáo án sáng tạo', url: 'https://docs.google.com/forms/d/e/1FAIpQLScA88PTaQBGeq9bBGHZajxGvRzP_jkxlemEXPn1f7w06Hnsfw/viewform' },
-                         { label: 'Lesson 7\nỨng dụng AI đổi mới phương pháp và nâng cao hiệu quả giảng dạy', url: 'https://docs.google.com/forms/d/e/1FAIpQLSeBSTU2pLzd7zQyjnjR0MwH8rXE5rhnx_X-TWeAagTC-jZtbQ/viewform' },
-                         { label: 'Lesson 8\nHướng dẫn đánh giá, phản hồi kết quả học tập', url: 'https://forms.gle/5kx65SAyVysBJU7JA' },
-                         { label: 'Lesson 9', url: '' },
-                         { label: '[Bài tập] Hướng Dẫn Sử Dụng AI4Student cho Giáo Viên', url: 'https://docs.google.com/forms/d/e/1FAIpQLSeu9yIgdRcKCgPnHQJDO67Gz4s8f-gAc5yVtS30--BV_Hl0Tw/viewform' },
-                         { label: '[Bài tập] Hướng Dẫn Sử Dụng AI4Teacher cho Giáo Viên', url: 'https://docs.google.com/forms/d/e/1FAIpQLSepfkGy05KQM0XZsVhgzfxEjtyGaYfWywr0ckpWHSLtyHI5_w/viewform' },
-                         { label: '[Bài tập] Ứng dụng AI đổi mới phương pháp và nâng cao hiệu quả giảng dạy', url: 'https://docs.google.com/forms/d/e/1FAIpQLSeBSTU2pLzd7zQyjnjR0MwH8rXE5rhnx_X-TWeAagTC-jZtbQ/viewform' },
-                       ];
-                       return lessonLinks
-                         .filter((l) => {
-                           const score = toNum(row[l.label]);
-                           // Chỉ cải thiện điểm các bài có điểm khác 0 và khác 10
-                           return !Number.isNaN(score) && score !== 0 && score !== 10;
-                         })
-                        .map((l) => (
-                          <a
-                            key={l.label}
-                            href={l.url || undefined}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`block rounded-xl border border-white/40 p-3 ${l.url ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-white/30 text-black/60 cursor-not-allowed'}`}
-                            title={l.url ? 'Làm bài để cải thiện điểm' : 'Chưa có link bài'}
-                          >
-                            <div className="text-sm whitespace-pre-line">{l.label}</div>
-                            <div className="text-xs opacity-80">{l.url ? 'Mở bài luyện tập' : '—'}</div>
-                          </a>
-                        ));
-                    })()}
-                  </div>
-                </div>
-              )}
+              
               {/* Khi không có dữ liệu, khối placeholder phía trên sẽ đảm nhận việc lấp đầy không gian */}
             </div>
             )}

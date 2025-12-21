@@ -55,6 +55,16 @@ function mapByLetters(cols: string[], rowObj: Record<string, any>) {
 
 // Fetch sheet rows and filter by LMS code (exact match in any column)
 export async function fetchSheetByLmsCode(sheetId: string, lmsCode: string, gid?: string) {
+  // Prefer proxy API to avoid exposing sheetId in client
+  const baseApi = '/api/sheet?type=main&code=' + encodeURIComponent(lmsCode);
+  const useProxy = typeof window !== 'undefined';
+  if (useProxy) {
+    const resp = await fetch(baseApi);
+    if (!resp.ok) throw new Error(`Lỗi tải sheet (HTTP ${resp.status})`);
+    const data = await resp.json();
+    return { cols: [], rows: Array.isArray(data.rows) ? data.rows : [] };
+  }
+  // Fallback (SSR/dev tools): direct GViz
   const base = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
   const url = gid ? `${base}&gid=${encodeURIComponent(gid)}` : base;
   const resp = await fetch(url);
@@ -76,6 +86,15 @@ export async function fetchSheetByLmsCode(sheetId: string, lmsCode: string, gid?
 
 // Fetch sheet for advanced training by exact Code (column B)
 export async function fetchAdvancedByCode(sheetId: string, code: string, gid?: string) {
+  const baseApi = '/api/sheet?type=adv&code=' + encodeURIComponent(code || '');
+  const useProxy = typeof window !== 'undefined';
+  if (useProxy) {
+    const resp = await fetch(baseApi);
+    if (!resp.ok) throw new Error(`Lỗi tải sheet nâng cao (HTTP ${resp.status})`);
+    const data = await resp.json();
+    return { cols: [], rows: Array.isArray(data.rows) ? data.rows : [] };
+  }
+  // Fallback direct (SSR/dev)
   const base = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
   const url = gid ? `${base}&gid=${encodeURIComponent(gid)}` : base;
   const resp = await fetch(url);
@@ -102,22 +121,16 @@ export async function fetchAdvancedByCode(sheetId: string, code: string, gid?: s
     return { cols: c, rows: r };
   })(text);
   const needle = String(code).trim().toLowerCase();
-  // Lấy theo cột B nếu có code; nếu không có code -> trả về tất cả
   const baseRows = (needle
     ? rows.filter((row: Record<string, any>) => {
         const byIndex = cols.map((col: string, i: number) => row[col]);
-        const codeVal = byIndex[1]; // Column B
+        const codeVal = byIndex[1];
         return String(codeVal ?? '').trim().toLowerCase() === needle;
       })
     : rows);
-  // Trả về dữ liệu đã map các cột cơ bản (A: Full name, B: Code) và giữ nguyên row
   const mapped = baseRows.map((row: Record<string, any>) => {
     const byIndex = cols.map((col: string, i: number) => row[col]);
-    return {
-      'Full name': byIndex[0] ?? null,
-      'Code': byIndex[1] ?? null,
-      ...row,
-    } as Record<string, any>;
+    return { 'Full name': byIndex[0] ?? null, 'Code': byIndex[1] ?? null, ...row } as Record<string, any>;
   });
   return { cols, rows: mapped };
 }
