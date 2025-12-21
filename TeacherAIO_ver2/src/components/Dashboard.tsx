@@ -346,7 +346,7 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
         <footer className="px-4 py-6 md:px-8">
           <div className="max-w-7xl mx-auto text-center">
             <p className="text-white/50 text-sm">
-              © 2025 Teacher All In One. Hệ thống quản lý thông tin giáo viên.
+              © 2025 Teacher All In One. Đây là hệ thống mô phỏng kiểm tra chỉ số, các dữ liệu đều là giả để minh họa và không có giá trị khi trong đối chứng tính minh bạch.
             </p>
           </div>
         </footer>
