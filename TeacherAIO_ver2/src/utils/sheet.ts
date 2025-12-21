@@ -30,19 +30,23 @@ function parseGviz(text: string): SheetResult {
 function mapByLetters(cols: string[], rowObj: Record<string, any>) {
   const byIndex = cols.map((_, i) => rowObj[cols[i]]);
   const letterToIndex = (ch: string) => ch.toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0);
-  // Bao gồm cả cột A (Full name) để hiển thị tên
-  const pickLetters = ['A','B','G','J','P','R','S','T','U','W'];
+  // Thứ tự cột mới sau khi xoá Rank:
+  // A Full name, B Code, C User name, D Khối, E Status, F Role,
+  // G CR45, H 15%, I TP, J 20%, K Completion rate, L 20%, M 20%,
+  // N Điểm trung bình chuyên môn, O 25%, P Technical, Q Trial,
+  // R Sư phạm, S Điểm đánh giá (Max = 5), T Xếp loại, U Đánh giá
+  const pickLetters = ['A','B','F','I','N','P','Q','R','S','U'];
   const names = [
-    'Full name',
-    'Code',
-    'Role',
-    'TP',
-    'Điểm trung bình chuyên môn',
-    'Technical',
-    'Trial',
-    'Sư Phạm',
-    'Điểm đánh giá',
-    'Đánh giá',
+    'Full name',        // A
+    'Code',             // B
+    'Role',             // F
+    'TP',               // I
+    'Điểm trung bình chuyên môn', // N
+    'Technical',        // P
+    'Trial',            // Q
+    'Sư Phạm',          // R
+    'Điểm đánh giá',    // S
+    'Đánh giá',         // U
   ];
   const obj: Record<string, any> = {};
   pickLetters.forEach((L, i) => {
