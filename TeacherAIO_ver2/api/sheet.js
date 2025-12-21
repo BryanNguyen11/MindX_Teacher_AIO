@@ -31,7 +31,7 @@ function mapMainByLetters(cols, rowObj) {
   return obj;
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   try {
     const type = (req.query.type) || 'main';
     const code = String(req.query.code ?? '').trim();
@@ -73,3 +73,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err?.message || 'Internal error' });
   }
 }
+
+module.exports = handler;

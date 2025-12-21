@@ -8,7 +8,5 @@
       }
     }
   ],
-  "routes": [
-    { "src": "/api/sheet", "dest": "/api/sheet.js" }
-  ]
+  "routes": []
 }

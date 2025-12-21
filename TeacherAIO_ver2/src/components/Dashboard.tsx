@@ -15,7 +15,6 @@ interface PersonalStats {
   name: string;
   lmsCode: string;
   totalPoints: number;
-  rank: string;
   completionRate: number;
   streak: number;
 }

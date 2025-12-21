@@ -11,7 +11,6 @@ interface PersonalStats {
   name: string;
   lmsCode: string;
   totalPoints: number;
-  rank: string;
   completionRate: number;
   streak: number;
 }
@@ -40,7 +39,6 @@ export default function App() {
         name: "",
         lmsCode: "",
         totalPoints: 0,
-        rank: "",
         completionRate: 0,
         streak: 0,
       };
@@ -58,9 +56,6 @@ export default function App() {
       name: currentUser.name,
       lmsCode: currentUser.lmsCode,
       totalPoints: Math.floor(random(1000, 9999)),
-      rank: ["Đồng", "Bạc", "Vàng", "Bạch kim", "Kim cương"][
-        Math.floor(random(0, 5))
-      ],
       completionRate: Math.floor(random(60, 99)),
       streak: Math.floor(random(5, 45)),
     };
