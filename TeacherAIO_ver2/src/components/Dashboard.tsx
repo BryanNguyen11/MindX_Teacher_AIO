@@ -8,8 +8,8 @@ import { fetchSheetByLmsCode } from '../utils/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { fetchAdvancedByCode } from '../utils/sheet';
-import { getDefaultMainSheetId, getDefaultAdvSheetId } from '../utils/sheetIds';
-import { getLessonLinks } from '../utils/linkMap';
+// Bỏ obfuscate mặc định, dùng ID sheet cũ để đảm bảo hoạt động
+// Khôi phục link làm bài trực tiếp (không obfuscate)
 
 interface PersonalStats {
   name: string;
@@ -35,7 +35,7 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
   const [queryCode, setQueryCode] = useState<string>(userLmsCode || '');
   // Cấu hình sheet: cho phép người dùng gán link dữ liệu với mật khẩu
   const [sheetId, setSheetId] = useState<string>(() => {
-    return localStorage.getItem('aio_sheet_id') || getDefaultMainSheetId();
+    return localStorage.getItem('aio_sheet_id') || '1WgmLAeasNKCDo1JUm_5iDv9Ww5Wzh8rQ3EXCc8nSVvQ';
   });
   const [sheetLinkInput, setSheetLinkInput] = useState<string>('');
   const [sheetPwdInput, setSheetPwdInput] = useState<string>('');
@@ -46,7 +46,7 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
   const [advAllRows, setAdvAllRows] = useState<Record<string, any>[]>([]);
   const [advRows, setAdvRows] = useState<Record<string, any>[]>([]);
   const [advError, setAdvError] = useState<string | null>(null);
-  const ADV_SHEET_ID = getDefaultAdvSheetId();
+  const ADV_SHEET_ID = '19uKKdBq3aZQ3dd2m3B_-Jk8RC7ffUdYRC25CM4zO8f4';
 
   useEffect(() => {
     let aborted = false;
@@ -54,6 +54,10 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
       setSheetError(null);
       try {
         if (!queryCode) return;
+        if (!sheetId) {
+          setSheetError('Chưa cấu hình Sheet ID hợp lệ. Vui lòng mở biểu tượng link để nhập link Google Sheet.');
+          return;
+        }
         const data = await fetchSheetByLmsCode(sheetId, queryCode);
         if (!aborted) {
           setSheetRows(Array.isArray(data.rows) ? data.rows : []);
@@ -74,6 +78,10 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
       try {
         if (activePage !== 'advanced') return;
         setAdvError(null);
+        if (!ADV_SHEET_ID) {
+          setAdvError('Chưa cấu hình Sheet nâng cao hợp lệ.');
+          return;
+        }
         const res = await fetchAdvancedByCode(ADV_SHEET_ID, '');
         if (!aborted) setAdvAllRows(Array.isArray(res.rows) ? res.rows : []);
       } catch (err) {
@@ -218,7 +226,7 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
                     return (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="bg-white/30 rounded-xl p-3 border border-white/40">
-                          <div className="text-black/60 text-sm">Số bài điểm 0</div>
+                          <div className="text-black/60 text-sm">Số bài chưa hoàn thành</div>
                           <div className="text-black text-2xl">{zeroLessonCount}</div>
                         </div>
                         <div className="bg-white/30 rounded-xl p-3 border border-white/40">
@@ -274,7 +282,20 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
                         const m = String(v ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
                         return m ? Number(m[0]) : NaN;
                       };
-                      const lessonLinks: { label: string; url: string }[] = getLessonLinks();
+                       const lessonLinks: { label: string; url: string }[] = [
+                         { label: 'Lesson 1\n[kỹ năng trao đổi với PHHS]', url: 'https://forms.gle/HErPEqqNUoyWX5aP9' },
+                         { label: 'Lesson 2\n[Kỹ năng quan sát học viên]', url: 'https://docs.google.com/forms/d/e/1FAIpQLSfnUtOUnGBzNyfGIV1tvl_XO9UbVyHMDedHB1sznVwL1Fd_2g/viewform' },
+                         { label: 'Lesson 3\n[Kỹ năng trao đổi với học viên]', url: 'https://docs.google.com/forms/d/e/1FAIpQLSdemZdhF4zmXvPAyOQRZvVZyYw_u4DOuYLBStXOKUDqIb8GUg/viewform' },
+                         { label: 'Lesson 4\n[Định hướng & tạo động lực trong học tập]', url: 'https://forms.gle/QqavsiUDDrJWWtVK8' },
+                         { label: 'Lesson 5\n[Hướng dẫn tổ chức học sinh làm dự án cuối khóa]', url: 'https://forms.gle/iVTzyPXyJDFXV4hn6' },
+                         { label: 'Lesson 6\nHướng dẫn xây dựng bài giảng, giáo án sáng tạo', url: 'https://docs.google.com/forms/d/e/1FAIpQLScA88PTaQBGeq9bBGHZajxGvRzP_jkxlemEXPn1f7w06Hnsfw/viewform' },
+                         { label: 'Lesson 7\nỨng dụng AI đổi mới phương pháp và nâng cao hiệu quả giảng dạy', url: 'https://docs.google.com/forms/d/e/1FAIpQLSeBSTU2pLzd7zQyjnjR0MwH8rXE5rhnx_X-TWeAagTC-jZtbQ/viewform' },
+                         { label: 'Lesson 8\nHướng dẫn đánh giá, phản hồi kết quả học tập', url: 'https://forms.gle/5kx65SAyVysBJU7JA' },
+                         { label: 'Lesson 9', url: '' },
+                         { label: '[Bài tập] Hướng Dẫn Sử Dụng AI4Student cho Giáo Viên', url: 'https://docs.google.com/forms/d/e/1FAIpQLSeu9yIgdRcKCgPnHQJDO67Gz4s8f-gAc5yVtS30--BV_Hl0Tw/viewform' },
+                         { label: '[Bài tập] Hướng Dẫn Sử Dụng AI4Teacher cho Giáo Viên', url: 'https://docs.google.com/forms/d/e/1FAIpQLSepfkGy05KQM0XZsVhgzfxEjtyGaYfWywr0ckpWHSLtyHI5_w/viewform' },
+                         { label: '[Bài tập] Ứng dụng AI đổi mới phương pháp và nâng cao hiệu quả giảng dạy', url: 'https://docs.google.com/forms/d/e/1FAIpQLSeBSTU2pLzd7zQyjnjR0MwH8rXE5rhnx_X-TWeAagTC-jZtbQ/viewform' },
+                       ];
                        return lessonLinks
                          .filter((l) => {
                            const score = toNum(row[l.label]);
@@ -300,6 +321,66 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
               )}
               {/* Khi không có dữ liệu, khối placeholder phía trên sẽ đảm nhận việc lấp đầy không gian */}
             </div>
+            )}
+            {/* Liên kết Edpuzzle cho các bài có điểm 0 (chỉ trong trang nâng cao) */}
+            {activePage === 'advanced' && advRows.length > 0 && (
+              <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30">
+                <div className="text-black/80 text-sm mb-3">Bài điểm 0 — bổ sung trên Edpuzzle</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {(() => {
+                    const row = advRows[0] as Record<string, any>;
+                    const toNum = (v: any) => {
+                      const m = String(v ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
+                      return m ? Number(m[0]) : NaN;
+                    };
+                    const labels = [
+                      'Lesson 1\n[kỹ năng trao đổi với PHHS]',
+                      'Lesson 2\n[Kỹ năng quan sát học viên]',
+                      'Lesson 3\n[Kỹ năng trao đổi với học viên]',
+                      'Lesson 4\n[Định hướng & tạo động lực trong học tập]',
+                      'Lesson 5\n[Hướng dẫn tổ chức học sinh làm dự án cuối khóa]',
+                      'Lesson 6\nHướng dẫn xây dựng bài giảng, giáo án sáng tạo',
+                      'Lesson 7\nỨng dụng AI đổi mới phương pháp và nâng cao hiệu quả giảng dạy',
+                      'Lesson 8\nHướng dẫn đánh giá, phản hồi kết quả học tập',
+                      'Lesson 9',
+                    ];
+                    const classCode = 'apfosji';
+                    const joinUrl = `https://edpuzzle.com/join/${classCode}`;
+                    const guideUrl = 'https://www.youtube.com/watch?v=kgHsDr6pcWg';
+                    return labels
+                      .filter((lbl) => {
+                        const score = toNum(row[lbl]);
+                        return !Number.isNaN(score) && score === 0;
+                      })
+                      .map((lbl) => (
+                        <div key={lbl} className="flex flex-col gap-2 border border-white/40 rounded-xl p-3 bg-white/30">
+                          <div className="text-sm whitespace-pre-line text-black/80">{lbl}</div>
+                          <div className="flex gap-2">
+                            <a
+                              href={joinUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                              title={`Truy cập Edpuzzle (mã lớp: ${classCode})`}
+                            >
+                              Mở Edpuzzle
+                            </a>
+                            <a
+                              href={guideUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-800"
+                              title="Hướng dẫn truy cập Edpuzzle"
+                            >
+                              Xem hướng dẫn
+                            </a>
+                          </div>
+                          <div className="text-xs text-black/60">Mã lớp: {classCode}</div>
+                        </div>
+                      ));
+                  })()}
+                </div>
+              </div>
             )}
             {activePage === 'home' && (
               <div className="">

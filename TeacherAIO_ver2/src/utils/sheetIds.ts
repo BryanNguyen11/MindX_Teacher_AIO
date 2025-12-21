@@ -10,8 +10,11 @@ const parts = {
 
 function decodeId(arr: string[]) {
   try {
-    const base64 = arr.join('');
-    return atob(base64);
+    const base64 = arr.join('').replace(/\s+/g, '');
+    const decoded = atob(base64);
+    // Basic sanity check: Google Sheet IDs are non-empty and alphanumeric with dashes/underscores
+    if (/^[a-zA-Z0-9-_]+$/.test(decoded)) return decoded;
+    return '';
   } catch {
     return '';
   }
