@@ -15,9 +15,9 @@ interface LiquidGlassCardProps {
 }
 
 export default function LiquidGlassCard({ stats, sheet }: LiquidGlassCardProps) {
-  // Header info must come from login info
-  const name = stats.name;
-  const lms = stats.lmsCode;
+  // Ưu tiên lấy từ dữ liệu sheet: 'Full name' và 'Code'; fallback về stats
+  const name = (sheet?.['Full name'] as string) || stats.name;
+  const lms = (sheet?.['Code'] as string) || stats.lmsCode;
   const rank = sheet?.['Rank'] as string | undefined;
   const role = sheet?.['Role'] as string | undefined;
   // Simple formatter (TP with separators)

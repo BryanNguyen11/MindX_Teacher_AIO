@@ -2,11 +2,13 @@ import { Home, User, BookOpen, Award, Settings, BarChart3, Calendar, Bell } from
 
 interface SidebarProps {
   activePage?: string;
+  onNavigate?: (pageId: string) => void;
 }
 
-export default function Sidebar({ activePage = 'home' }: SidebarProps) {
+export default function Sidebar({ activePage = 'home', onNavigate }: SidebarProps) {
   const menuItems = [
     { id: 'home', icon: Home, label: 'Trang chủ' },
+    { id: 'advanced', icon: BookOpen, label: 'Đào tạo nâng cao' },
     { id: 'schedule', icon: Calendar, label: 'Lịch làm việc' },
     { id: 'notifications', icon: Bell, label: 'Thông báo' },
   ];
@@ -27,6 +29,7 @@ export default function Sidebar({ activePage = 'home' }: SidebarProps) {
                       isActive ? 'bg-red-500 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
                     }`}
                     aria-label={item.label}
+                    onClick={() => onNavigate?.(item.id)}
                   >
                     <Icon className="w-5 h-5" />
                     <span className="mt-1 leading-none">{item.label.split(' ')[0]}</span>
@@ -72,6 +75,7 @@ export default function Sidebar({ activePage = 'home' }: SidebarProps) {
                           ? 'bg-red-500 text-white'
                           : 'text-white/70 hover:bg-white/10 hover:text-white'
                       }`}
+                      onClick={() => onNavigate?.(item.id)}
                     >
                       <Icon className="w-5 h-5 flex-shrink-0" />
                       <span>{item.label}</span>

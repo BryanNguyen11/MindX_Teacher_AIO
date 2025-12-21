@@ -8,10 +8,5 @@
       }
     }
   ],
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://RENDER_BACKEND_URL/api/:path*"
-    }
-  ]
+  "routes": []
 }

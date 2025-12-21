@@ -74,4 +74,4 @@ Do not
 - Add dependencies without discussing tradeoffs in PR description.
 
 Changelog
-- 2025-10-28: Initial project-wide guidelines authored and adopted.
+- 2025-10-28: Initial project-wide guidelines authored and adopted. 
