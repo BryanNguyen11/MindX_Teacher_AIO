@@ -18,7 +18,6 @@ export default function LiquidGlassCard({ stats, sheet }: LiquidGlassCardProps) 
   // Ưu tiên lấy từ dữ liệu sheet: 'Full name' và 'Code'; fallback về stats
   const name = (sheet?.['Full name'] as string) || stats.name;
   const lms = (sheet?.['Code'] as string) || stats.lmsCode;
-  const rank = sheet?.['Rank'] as string | undefined;
   const role = sheet?.['Role'] as string | undefined;
   // Simple formatter (TP with separators)
   const fmt = (label: string, v: any): string => {
@@ -47,13 +46,8 @@ export default function LiquidGlassCard({ stats, sheet }: LiquidGlassCardProps) 
                 <p className="text-black/60 text-xs mt-1">Mã LMS: {lms}</p>
               </div>
             </div>
-            {(rank || role) && (
+            {(role) && (
               <div className="flex flex-col items-end gap-2">
-                {rank && (
-                  <div className="px-3 py-1 rounded-full bg-white/30 border border-white/40 text-black/80 text-xs">
-                    Rank: <span className="font-medium">{rank}</span>
-                  </div>
-                )}
                 {role && (
                   <div className="px-3 py-1 rounded-full bg-white/30 border border-white/40 text-black/80 text-xs">
                     Role: <span className="font-medium">{role}</span>

@@ -31,11 +31,10 @@ function mapByLetters(cols: string[], rowObj: Record<string, any>) {
   const byIndex = cols.map((_, i) => rowObj[cols[i]]);
   const letterToIndex = (ch: string) => ch.toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0);
   // Bao gồm cả cột A (Full name) để hiển thị tên
-  const pickLetters = ['A','B','D','G','J','P','R','S','T','U','W'];
+  const pickLetters = ['A','B','G','J','P','R','S','T','U','W'];
   const names = [
     'Full name',
     'Code',
-    'Rank',
     'Role',
     'TP',
     'Điểm trung bình chuyên môn',
