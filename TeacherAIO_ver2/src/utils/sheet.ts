@@ -57,7 +57,7 @@ function mapByLetters(cols: string[], rowObj: Record<string, any>) {
 export async function fetchSheetByLmsCode(sheetId: string, lmsCode: string, gid?: string) {
   // Prod: dùng proxy API để ẩn Sheet ID; Dev: gọi trực tiếp GViz
   const baseApi = '/api/sheet?type=main&code=' + encodeURIComponent(lmsCode);
-  const useProxy = typeof window !== 'undefined' && (typeof process !== 'undefined' ? process.env.NODE_ENV === 'production' : false);
+  const useProxy = typeof window !== 'undefined' && !/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(window.location.host);
   if (useProxy) {
     const resp = await fetch(baseApi);
     if (!resp.ok) throw new Error(`Lỗi tải sheet (HTTP ${resp.status})`);
@@ -87,7 +87,7 @@ export async function fetchSheetByLmsCode(sheetId: string, lmsCode: string, gid?
 // Fetch sheet for advanced training by exact Code (column B)
 export async function fetchAdvancedByCode(sheetId: string, code: string, gid?: string) {
   const baseApi = '/api/sheet?type=adv&code=' + encodeURIComponent(code || '');
-  const useProxy = typeof window !== 'undefined' && (typeof process !== 'undefined' ? process.env.NODE_ENV === 'production' : false);
+  const useProxy = typeof window !== 'undefined' && !/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(window.location.host);
   if (useProxy) {
     const resp = await fetch(baseApi);
     if (!resp.ok) throw new Error(`Lỗi tải sheet nâng cao (HTTP ${resp.status})`);
