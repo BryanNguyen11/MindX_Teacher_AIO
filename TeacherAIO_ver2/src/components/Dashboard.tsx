@@ -8,6 +8,8 @@ import { fetchSheetByLmsCode } from '../utils/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { fetchAdvancedByCode } from '../utils/sheet';
+import { getDefaultMainSheetId, getDefaultAdvSheetId } from '../utils/sheetIds';
+import { getLessonLinks } from '../utils/linkMap';
 
 interface PersonalStats {
   name: string;
@@ -33,7 +35,7 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
   const [queryCode, setQueryCode] = useState<string>(userLmsCode || '');
   // Cấu hình sheet: cho phép người dùng gán link dữ liệu với mật khẩu
   const [sheetId, setSheetId] = useState<string>(() => {
-    return localStorage.getItem('aio_sheet_id') || '1WgmLAeasNKCDo1JUm_5iDv9Ww5Wzh8rQ3EXCc8nSVvQ';
+    return localStorage.getItem('aio_sheet_id') || getDefaultMainSheetId();
   });
   const [sheetLinkInput, setSheetLinkInput] = useState<string>('');
   const [sheetPwdInput, setSheetPwdInput] = useState<string>('');
@@ -44,7 +46,7 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
   const [advAllRows, setAdvAllRows] = useState<Record<string, any>[]>([]);
   const [advRows, setAdvRows] = useState<Record<string, any>[]>([]);
   const [advError, setAdvError] = useState<string | null>(null);
-  const ADV_SHEET_ID = '19uKKdBq3aZQ3dd2m3B_-Jk8RC7ffUdYRC25CM4zO8f4';
+  const ADV_SHEET_ID = getDefaultAdvSheetId();
 
   useEffect(() => {
     let aborted = false;
@@ -272,26 +274,13 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
                         const m = String(v ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
                         return m ? Number(m[0]) : NaN;
                       };
-                      const lessonLinks: { label: string; url: string }[] = [
-                        { label: 'Lesson 1\n[kỹ năng trao đổi với PHHS]', url: 'https://forms.gle/HErPEqqNUoyWX5aP9' },
-                        { label: 'Lesson 2\n[Kỹ năng quan sát học viên]', url: 'https://docs.google.com/forms/d/e/1FAIpQLSfnUtOUnGBzNyfGIV1tvl_XO9UbVyHMDedHB1sznVwL1Fd_2g/viewform' },
-                        { label: 'Lesson 3\n[Kỹ năng trao đổi với học viên]', url: 'https://docs.google.com/forms/d/e/1FAIpQLSdemZdhF4zmXvPAyOQRZvVZyYw_u4DOuYLBStXOKUDqIb8GUg/viewform' },
-                        { label: 'Lesson 4\n[Định hướng & tạo động lực trong học tập]', url: 'https://forms.gle/QqavsiUDDrJWWtVK8' },
-                        { label: 'Lesson 5\n[Hướng dẫn tổ chức học sinh làm dự án cuối khóa]', url: 'https://forms.gle/iVTzyPXyJDFXV4hn6' },
-                        { label: 'Lesson 6\nHướng dẫn xây dựng bài giảng, giáo án sáng tạo', url: 'https://docs.google.com/forms/d/e/1FAIpQLScA88PTaQBGeq9bBGHZajxGvRzP_jkxlemEXPn1f7w06Hnsfw/viewform' },
-                        { label: 'Lesson 7\nỨng dụng AI đổi mới phương pháp và nâng cao hiệu quả giảng dạy', url: 'https://docs.google.com/forms/d/e/1FAIpQLSeBSTU2pLzd7zQyjnjR0MwH8rXE5rhnx_X-TWeAagTC-jZtbQ/viewform' },
-                        { label: 'Lesson 8\nHướng dẫn đánh giá, phản hồi kết quả học tập', url: 'https://forms.gle/5kx65SAyVysBJU7JA' },
-                        { label: 'Lesson 9', url: '' },
-                        // Bài tập bổ sung AI
-                        { label: '[Bài tập] Hướng Dẫn Sử Dụng AI4Student cho Giáo Viên', url: 'https://docs.google.com/forms/d/e/1FAIpQLSeu9yIgdRcKCgPnHQJDO67Gz4s8f-gAc5yVtS30--BV_Hl0Tw/viewform' },
-                        { label: '[Bài tập] Hướng Dẫn Sử Dụng AI4Teacher cho Giáo Viên', url: 'https://docs.google.com/forms/d/e/1FAIpQLSepfkGy05KQM0XZsVhgzfxEjtyGaYfWywr0ckpWHSLtyHI5_w/viewform' },
-                        { label: '[Bài tập] Ứng dụng AI đổi mới phương pháp và nâng cao hiệu quả giảng dạy', url: 'https://docs.google.com/forms/d/e/1FAIpQLSeBSTU2pLzd7zQyjnjR0MwH8rXE5rhnx_X-TWeAagTC-jZtbQ/viewform' },
-                      ];
-                      return lessonLinks
-                        .filter((l) => {
-                          const score = toNum(row[l.label]);
-                          return !Number.isNaN(score) && score < 10;
-                        })
+                      const lessonLinks: { label: string; url: string }[] = getLessonLinks();
+                       return lessonLinks
+                         .filter((l) => {
+                           const score = toNum(row[l.label]);
+                           // Chỉ cải thiện điểm các bài có điểm khác 0 và khác 10
+                           return !Number.isNaN(score) && score !== 0 && score !== 10;
+                         })
                         .map((l) => (
                           <a
                             key={l.label}
