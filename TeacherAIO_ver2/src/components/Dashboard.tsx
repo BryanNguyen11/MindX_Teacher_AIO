@@ -47,10 +47,22 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
   const [advError, setAdvError] = useState<string | null>(null);
   const ADV_SHEET_ID = '19uKKdBq3aZQ3dd2m3B_-Jk8RC7ffUdYRC25CM4zO8f4';
 
+  // Helper: tìm giá trị ô trong row với nhiều chiến lược khớp label
+  const findRowValue = (row: Record<string, any>, label: string) => {
+    const short = String(label).split('\n')[0];
+    const normalize = (s: string) => String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const keys = Object.keys(row || {});
+    const exactKey = keys.find((k) => k === label) || keys.find((k) => k === short);
+    const startsWithKey = keys.find((k) => normalize(k).startsWith(normalize(short)));
+    const includesKey = keys.find((k) => normalize(k).includes(normalize(short)));
+    const actualKey = exactKey || startsWithKey || includesKey || keys.find(Boolean) || label;
+    return row[actualKey] ?? row[label] ?? row[short] ?? '';
+  };
+
   // Cấu hình link Google Forms cho tính năng "Cải thiện điểm"
   // Lưu ý: điền URL tương ứng cho từng bài nếu có, để trống sẽ ẩn nút.
   const FORM_LINKS: Record<string, string> = {
-    // Khớp với label trong Sheet hiện tại
+    // Cập nhật chính xác theo dữ liệu mới do bạn cung cấp
     'Lesson 1\n[kỹ năng trao đổi với PHHS]': 'https://forms.gle/HErPEqqNUoyWX5aP9',
     'Lesson 2\n[Kỹ năng quan sát học viên]': 'https://docs.google.com/forms/d/e/1FAIpQLSfnUtOUnGBzNyfGIV1tvl_XO9UbVyHMDedHB1sznVwL1Fd_2g/viewform',
     'Lesson 3\n[Kỹ năng trao đổi với học viên]': 'https://docs.google.com/forms/d/e/1FAIpQLSdemZdhF4zmXvPAyOQRZvVZyYw_u4DOuYLBStXOKUDqIb8GUg/viewform',
@@ -58,15 +70,19 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
     'Lesson 5\n[Hướng dẫn tổ chức học sinh làm dự án cuối khóa]': 'https://forms.gle/iVTzyPXyJDFXV4hn6',
     'Lesson 6\nHướng dẫn xây dựng bài giảng, giáo án sáng tạo': 'https://docs.google.com/forms/d/e/1FAIpQLScA88PTaQBGeq9bBGHZajxGvRzP_jkxlemEXPn1f7w06Hnsfw/viewform',
     'Lesson 7\nỨng dụng AI đổi mới phương pháp và nâng cao hiệu quả giảng dạy': 'https://docs.google.com/forms/d/e/1FAIpQLSeBSTU2pLzd7zQyjnjR0MwH8rXE5rhnx_X-TWeAagTC-jZtbQ/viewform',
-    'Lesson 8\nHướng dẫn đánh giá, phản hồi kết quả học tập': 'https://forms.gle/5kx65SAyVysBJU7JA',
-    'Lesson 9': '',
-    // Các form bổ trợ AI
-    '[Bài tập] Hướng Dẫn Sử Dụng AI4Student cho Giáo Viên': 'https://docs.google.com/forms/d/e/1FAIpQLSeu9yIgdRcKCgPnHQJDO67Gz4s8f-gAc5yVtS30--BV_Hl0Tw/viewform',
-    '[Bài tập] Hướng Dẫn Sử Dụng AI4Teacher cho Giáo Viên': 'https://docs.google.com/forms/d/e/1FAIpQLSepfkGy05KQM0XZsVhgzfxEjtyGaYfWywr0ckpWHSLtyHI5_w/viewform',
+    'Lesson 8\n[Bài tập] Hướng dẫn đánh giá, phản hồi kết quả học tập': 'https://forms.gle/5kx65SAyVysBJU7JA',
+    'Lesson 9\nHướng Dẫn Sử Dụng AI4Student cho Giáo Viên': 'https://docs.google.com/forms/d/e/1FAIpQLSeu9yIgdRcKCgPnHQJDO67Gz4s8f-gAc5yVtS30--BV_Hl0Tw/viewform',
+    'Lesson 10\nHướng Dẫn Sử Dụng AI4Teacher cho Giáo Viên': 'https://docs.google.com/forms/d/e/1FAIpQLSepfkGy05KQM0XZsVhgzfxEjtyGaYfWywr0ckpWHSLtyHI5_w/viewform',
+    'Lesson 11\nQuản lý, tổ chức lớp học hiệu quả': 'https://docs.google.com/forms/d/e/1FAIpQLSeYKWmRzI2Q18Tk8pTiiBWiBKFXx-wD3aQzTL3xOfzxt3XtjA/viewform',
   };
 
   // Toggle hiển thị danh sách cải thiện điểm
   const [showImprove, setShowImprove] = useState<boolean>(false);
+  // Confirm dialog for improving a 0-point lesson
+  const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
+  const [confirmFormUrl, setConfirmFormUrl] = useState<string>('');
+  const [confirmEdpuzzleUrl, setConfirmEdpuzzleUrl] = useState<string>('');
+  const [confirmLabel, setConfirmLabel] = useState<string>('');
 
   useEffect(() => {
     let aborted = false;
@@ -119,7 +135,10 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
       setAdvRows([]);
       return;
     }
-    const filtered = advAllRows.filter((r) => String(r['Code'] ?? '').trim().toLowerCase() === code);
+    // Match entered code against any cell value in the row to tolerate different header names
+    const filtered = advAllRows.filter((r) => {
+      return Object.values(r).some((v) => String(v ?? '').trim().toLowerCase() === code);
+    });
     setAdvRows(filtered);
   }, [advCode, advAllRows]);
   // Ưu tiên tên từ dữ liệu Sheet (cột "Full name"), fallback về tên trong stats
@@ -231,6 +250,17 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
                       const m = String(v ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
                       return m ? Number(m[0]) : 0;
                     };
+                    // helper: tìm giá trị ô trong row với nhiều chiến lược khớp label
+                    const findRowValue = (row: Record<string, any>, label: string) => {
+                      const short = String(label).split('\n')[0];
+                      const normalize = (s: string) => String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+                      const keys = Object.keys(row || {});
+                      const exactKey = keys.find((k) => k === label) || keys.find((k) => k === short);
+                      const startsWithKey = keys.find((k) => normalize(k).startsWith(normalize(short)));
+                      const includesKey = keys.find((k) => normalize(k).includes(normalize(short)));
+                      const actualKey = exactKey || startsWithKey || includesKey || keys.find(Boolean) || label;
+                      return row[actualKey] ?? row[label] ?? row[short] ?? '';
+                    };
                     // Danh sách label các bài học cần kiểm tra điểm 0
                     const lessonLabels = [
                       'Lesson 1\n[kỹ năng trao đổi với PHHS]',
@@ -242,11 +272,13 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
                       'Lesson 7\nỨng dụng AI đổi mới phương pháp và nâng cao hiệu quả giảng dạy',
                       'Lesson 8\nHướng dẫn đánh giá, phản hồi kết quả học tập',
                       'Lesson 9',
+                      'Lesson 10\n[Bài tập] Hướng dẫn đánh giá, phản hồi kết quả học tập',
+                      'Lesson 11\nQuản lý, tổ chức lớp học hiệu quả',
                     ];
                     // Đếm số bài có điểm 0 trong bản ghi người dùng (dòng đầu tiên)
                     const first = advRows[0] as Record<string, any>;
                     const zeroLessonCount = lessonLabels.reduce((cnt, label) => {
-                      const v = toNumber(first[label]);
+                      const v = toNumber(findRowValue(first, label));
                       return cnt + (v === 0 ? 1 : 0);
                     }, 0);
                     // Điểm trung bình: lấy từ cột "Điểm đánh giá" (nếu nhiều dòng, lấy trung bình các giá trị)
@@ -271,12 +303,16 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
                   <p className="text-white/70">Nhập mã LMS để xem tiến độ và điểm từng bài.</p>
                 </div>
               )}
-              {/* Hiển thị điểm theo các bài Lesson 1..9 */}
+              {/* Hiển thị điểm theo các bài Lesson 1..11 */}
               {advRows.length > 0 && (
-                <div className="mt-4 bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30">
-                  <div className="text-black/80 text-sm mb-2">Điểm từng bài</div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {(() => {
+                    const row = advRows[0] as Record<string, any>;
+                    const toNumber = (v: any) => {
+                      const m = String(v ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
+                      return m ? Number(m[0]) : NaN;
+                    };
+                    const lessonLabels = [
                       'Lesson 1\n[kỹ năng trao đổi với PHHS]',
                       'Lesson 2\n[Kỹ năng quan sát học viên]',
                       'Lesson 3\n[Kỹ năng trao đổi với học viên]',
@@ -285,129 +321,106 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
                       'Lesson 6\nHướng dẫn xây dựng bài giảng, giáo án sáng tạo',
                       'Lesson 7\nỨng dụng AI đổi mới phương pháp và nâng cao hiệu quả giảng dạy',
                       'Lesson 8\nHướng dẫn đánh giá, phản hồi kết quả học tập',
-                      'Lesson 9',
-                    ].map((label) => (
-                      <div key={label} className="bg-white/30 rounded-xl p-3 border border-white/40">
-                        <div className="text-black/60 text-sm whitespace-pre-line">{label}</div>
-                        <div className="text-black text-xl">
-                          {(() => {
-                            const m = String(advRows[0]?.[label] ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
-                            return m ? m[0] : '—';
-                          })()}
-                        </div>
-                        {/* Inline cải thiện điểm: nếu điểm >0 và <10 và có form URL thì hiển thị nút */}
-                        {(() => {
-                          const raw = advRows[0]?.[label];
-                          const m = String(raw ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
-                          const score = m ? Number(m[0]) : NaN;
-                          if (Number.isNaN(score) || score <= 0 || score >= 10) return null;
-                          // tìm URL form: thử chính xác, thử theo tiền tố 'Lesson X', hoặc theo chứa
-                          const short = label.split('\n')[0];
-                          let formUrl = FORM_LINKS[label] || FORM_LINKS[short];
-                          if (!formUrl) {
-                            const found = Object.entries(FORM_LINKS).find(([k, v]) => k.startsWith(short) && v);
-                            formUrl = found ? found[1] : '';
-                          }
-                          if (!formUrl) return null;
-                          // Edpuzzle join link (same class code used elsewhere)
-                          const edpuzzleClass = 'apfosji';
-                          const edpuzzleUrl = `https://edpuzzle.com/join/${edpuzzleClass}`;
-                          return (
-                            <div className="mt-3">
-                              <div className="flex gap-3">
-                                <a
-                                  href={formUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  aria-label={`Mở Google Form cho ${label}`}
-                                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-red font-semibold shadow-2xl transform transition-transform duration-150 hover:scale-105"
-                                >
-                                  <LinkIcon className="w-4 h-4 opacity-95" />
+                      'Lesson 9\nHướng Dẫn Sử Dụng AI4Student cho Giáo Viên',
+                      'Lesson 10\nHướng Dẫn Sử Dụng AI4Teacher cho Giáo Viên',
+                      'Lesson 11\nQuản lý, tổ chức lớp học hiệu quả',
+                    ];
+                    const edpuzzleClass = 'apfosji';
+                    return lessonLabels.map((label) => {
+                      const rawVal = findRowValue(row, label);
+                      const short = String(label).split('\n')[0];
+                      // Nếu dữ liệu là '-' hoặc rỗng thì coi như 0 và đánh dấu cảnh báo
+                      const isDash = String(rawVal).trim() === '-' || String(rawVal).trim() === '';
+                      const m = String(rawVal ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
+                      const score = isDash ? 0 : (m ? Number(m[0]) : NaN);
+                      let formUrl = FORM_LINKS[label] || FORM_LINKS[short];
+                      if (!formUrl) {
+                        const found = Object.entries(FORM_LINKS).find(([k, v]) => {
+                          const kshort = String(k).split('\n')[0];
+                          const nk = String(kshort ?? '').toLowerCase();
+                          const ns = String(short ?? '').toLowerCase();
+                          return nk === ns || nk.startsWith(ns) || nk.includes(ns);
+                        });
+                        formUrl = found ? found[1] : '';
+                      }
+                      const edpuzzleUrl = `https://edpuzzle.com/join/${edpuzzleClass}`;
+                      return (
+                        <div key={label} className="bg-white/10 rounded-xl p-3 border border-white/20">
+                          <div className="text-sm text-white/80 whitespace-pre-line">{label}</div>
+                          <div className="mt-3 flex items-center gap-3">
+                            <div className="text-white font-semibold w-16">{Number.isNaN(score) ? '-' : score}</div>
+                            {isDash && (
+                              <div className="text-xs text-yellow-300">Dữ liệu gốc: '-' → mặc định 0</div>
+                            )}
+                            <div className="flex-1 flex gap-3">
+                              {/* Cải Thiện Điểm button */}
+                              {formUrl ? (
+                                Number.isNaN(score) ? (
+                                  <button className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gray-400 text-white font-semibold opacity-60 cursor-not-allowed" disabled>
+                                    <LinkIcon className="w-4 h-4 opacity-80" />
+                                    <span>Cải Thiện Điểm</span>
+                                  </button>
+                                ) : score === 0 ? (
+                                  <button
+                                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-red-600 to-pink-500 text-white font-semibold shadow-2xl transform transition-transform duration-150 hover:scale-105"
+                                    onClick={() => {
+                                      setConfirmFormUrl(formUrl);
+                                      setConfirmEdpuzzleUrl(edpuzzleUrl);
+                                      setConfirmLabel(label);
+                                      setConfirmOpen(true);
+                                    }}
+                                  >
+                                    <LinkIcon className="w-4 h-4 opacity-95" />
+                                    <span>Cải Thiện Điểm</span>
+                                  </button>
+                                ) : score > 0 && score < 10 ? (
+                                  <a
+                                    href={formUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label={`Mở Google Form cho ${label}`}
+                                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white font-semibold shadow-2xl transform transition-transform duration-150 hover:scale-105"
+                                  >
+                                    <LinkIcon className="w-4 h-4 opacity-95" />
+                                    <span>Cải Thiện Điểm</span>
+                                  </a>
+                                ) : (
+                                  <button className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gray-400 text-white font-semibold opacity-60 cursor-not-allowed" disabled>
+                                    <LinkIcon className="w-4 h-4 opacity-80" />
+                                    <span>Cải Thiện Điểm</span>
+                                  </button>
+                                )
+                              ) : (
+                                <button className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gray-400 text-white font-semibold opacity-40 cursor-not-allowed" disabled>
+                                  <LinkIcon className="w-4 h-4 opacity-80" />
                                   <span>Cải Thiện Điểm</span>
-                                </a>
-                                <a
-                                  href={edpuzzleUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  aria-label={`Mở Edpuzzle cho ${label}`}
-                                  className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-sky-500 text-white font-semibold shadow-lg hover:scale-105"
-                                >
-                                  <ExternalLink className="w-4 h-4 opacity-95" />
-                                  <span>Edpuzzle</span>
-                                </a>
-                              </div>
+                                </button>
+                              )}
+
+                              {/* Edpuzzle button - always available */}
+                              <a
+                                href={edpuzzleUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`Mở Edpuzzle cho ${label}`}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-sky-500 text-white font-semibold shadow-lg hover:scale-105"
+                              >
+                                <ExternalLink className="w-4 h-4 opacity-95" />
+                                <span>Edpuzzle</span>
+                              </a>
                             </div>
-                          );
-                        })()}
-                      </div>
-                    ))}
-                  </div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               )}
               
               {/* Khi không có dữ liệu, khối placeholder phía trên sẽ đảm nhận việc lấp đầy không gian */}
             </div>
             )}
-            {/* Liên kết Edpuzzle cho các bài có điểm 0 (chỉ trong trang nâng cao) */}
-            {activePage === 'advanced' && advRows.length > 0 && (
-              <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30">
-                <div className="text-black/80 text-sm mb-3">Bài điểm 0 — bổ sung trên Edpuzzle</div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {(() => {
-                    const row = advRows[0] as Record<string, any>;
-                    const toNum = (v: any) => {
-                      const m = String(v ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
-                      return m ? Number(m[0]) : NaN;
-                    };
-                    const labels = [
-                      'Lesson 1\n[kỹ năng trao đổi với PHHS]',
-                      'Lesson 2\n[Kỹ năng quan sát học viên]',
-                      'Lesson 3\n[Kỹ năng trao đổi với học viên]',
-                      'Lesson 4\n[Định hướng & tạo động lực trong học tập]',
-                      'Lesson 5\n[Hướng dẫn tổ chức học sinh làm dự án cuối khóa]',
-                      'Lesson 6\nHướng dẫn xây dựng bài giảng, giáo án sáng tạo',
-                      'Lesson 7\nỨng dụng AI đổi mới phương pháp và nâng cao hiệu quả giảng dạy',
-                      'Lesson 8\nHướng dẫn đánh giá, phản hồi kết quả học tập',
-                      'Lesson 9',
-                    ];
-                    const classCode = 'apfosji';
-                    const joinUrl = `https://edpuzzle.com/join/${classCode}`;
-                    const guideUrl = 'https://www.youtube.com/watch?v=kgHsDr6pcWg';
-                    return labels
-                      .filter((lbl) => {
-                        const score = toNum(row[lbl]);
-                        return !Number.isNaN(score) && score === 0;
-                      })
-                      .map((lbl) => (
-                        <div key={lbl} className="flex flex-col gap-2 border border-white/40 rounded-xl p-3 bg-white/30">
-                          <div className="text-sm whitespace-pre-line text-black/80">{lbl}</div>
-                          <div className="flex gap-2">
-                            <a
-                              href={joinUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-                              title={`Truy cập Edpuzzle (mã lớp: ${classCode})`}
-                            >
-                              Mở Edpuzzle
-                            </a>
-                            <a
-                              href={guideUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-3 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-800"
-                              title="Hướng dẫn truy cập Edpuzzle"
-                            >
-                              Xem hướng dẫn
-                            </a>
-                          </div>
-                          <div className="text-xs text-black/60">Mã lớp: {classCode}</div>
-                        </div>
-                      ));
-                  })()}
-                </div>
-              </div>
-            )}
+            {/* Removed separate Edpuzzle block - now handled inline with confirmation for 0-point lessons */}
 
             {/* Khôi phục: Liên kết Google Forms cải thiện điểm (chỉ hiển thị nếu điểm > 0 và < 10) */}
             {activePage === 'advanced' && advRows.length > 0 && showImprove && (
@@ -430,6 +443,8 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
                       'Lesson 7\nỨng dụng AI đổi mới phương pháp và nâng cao hiệu quả giảng dạy',
                       'Lesson 8\nHướng dẫn đánh giá, phản hồi kết quả học tập',
                       'Lesson 9',
+                      'Lesson 10\n[Bài tập] Hướng dẫn đánh giá, phản hồi kết quả học tập',
+                      'Lesson 11\nQuản lý, tổ chức lớp học hiệu quả',
                       // Bổ sung các form AI nếu cần kích hoạt cải thiện độc lập
                       '[Bài tập] Hướng Dẫn Sử Dụng AI4Student cho Giáo Viên]',
                       '[Bài tập] Hướng Dẫn Sử Dụng AI4Teacher cho Giáo Viên]',
@@ -538,6 +553,41 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
         </div>
       </DialogContent>
     </Dialog>
+    {/* Dialog xác nhận cho cải thiện bài 0 điểm */}
+    <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <DialogContent className="bg-white/95 text-black max-w-md">
+        <DialogHeader>
+          <DialogTitle>Cảnh báo trước khi làm lại bài</DialogTitle>
+          <DialogDescription>các câu hỏi trong bài tập cần xem video để hoàn thành đúng, bạn vẫn muốn tiếp tục làm bài ?</DialogDescription>
+        </DialogHeader>
+        <div className="mt-4 space-y-3">
+          <div className="flex gap-2">
+            <Button
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => {
+                // mở Edpuzzle
+                if (confirmEdpuzzleUrl) window.open(confirmEdpuzzleUrl, '_blank', 'noopener');
+                setConfirmOpen(false);
+              }}
+            >
+              Mở Edpuzzle
+            </Button>
+            <Button
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => {
+                // vẫn làm bài: mở form (nếu có) even if empty
+                if (confirmFormUrl) window.open(confirmFormUrl, '_blank', 'noopener');
+                setConfirmOpen(false);
+              }}
+            >
+              Vẫn làm bài
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
     </div>
   );
 }
+
+// Note: Dialog component used above for sheet link reuses the project's Dialog.
