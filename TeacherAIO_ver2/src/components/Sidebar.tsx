@@ -7,7 +7,7 @@ interface SidebarProps {
 
 export default function Sidebar({ activePage = 'home', onNavigate }: SidebarProps) {
   const menuItems = [
-    { id: 'home', icon: Home, label: 'Trang chủ' },
+    { id: 'home', icon: Home, label: 'Chỉ số cá nhân' },
     { id: 'advanced', icon: BookOpen, label: 'Đào tạo nâng cao' },
     { id: 'schedule', icon: Calendar, label: 'Lịch làm việc' },
     { id: 'notifications', icon: Bell, label: 'Thông báo' },
@@ -55,7 +55,7 @@ export default function Sidebar({ activePage = 'home', onNavigate }: SidebarProp
                 />
               </div>
               <div>
-                <h2 className="text-white">Teacher AIO</h2>
+                <h2 className="text-white">X-Teacher Academy</h2>
                 
               </div>
             </div>

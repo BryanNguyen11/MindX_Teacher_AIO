@@ -157,7 +157,7 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
         <header className="px-4 py-6 md:px-8">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div>
-              <h1 className="text-white mb-1">CHECK SỐ ĐII !!!!</h1>
+              <h1 className="text-white mb-1">Trung tâm đào tạo</h1>
               
             </div>
             
