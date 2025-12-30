@@ -3,7 +3,8 @@
 
 export interface SheetResult {
   cols: string[];
-  rows: Record<string, any>[];
+  // Each row is an array of cell values aligned by column index
+  rows: any[][];
 }
 
 // Parse GViz response: google.visualization.Query.setResponse({...})
@@ -15,20 +16,20 @@ function parseGviz(text: string): SheetResult {
   }
   const json = JSON.parse(text.slice(start, end + 1));
   const cols: string[] = (json.table?.cols || []).map((c: any) => c.label || c.id || '');
-  const rows: Record<string, any>[] = (json.table?.rows || []).map((r: any) => {
-    const obj: Record<string, any> = {};
+  // Lưu từng hàng theo chỉ số cột để tránh đè giá trị khi có nhãn trùng nhau (vd: nhiều cột "20%")
+  const rows: any[][] = (json.table?.rows || []).map((r: any) => {
+    const arr: any[] = [];
     r.c?.forEach((cell: any, idx: number) => {
-      const key = cols[idx] || `col_${idx}`;
-      obj[key] = cell?.v ?? null;
+      arr[idx] = cell?.v ?? null;
     });
-    return obj;
+    return arr;
   });
   return { cols, rows };
 }
 
 // Map columns by letter indices to friendly names
-function mapByLetters(cols: string[], rowObj: Record<string, any>) {
-  const byIndex = cols.map((_, i) => rowObj[cols[i]]);
+function mapByLetters(cols: string[], rowVals: any[]) {
+  const byIndex = rowVals;
   const letterToIndex = (ch: string) => ch.toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0);
   // Thứ tự cột mới sau khi xoá Rank:
   // A Full name, B Code, C User name, D Khối, E Status, F Role,
@@ -81,10 +82,10 @@ export async function fetchSheetByLmsCode(sheetId: string, lmsCode: string, gid?
   }
   const { cols, rows } = parseGviz(text);
   const needle = String(lmsCode).trim().toLowerCase();
-  const filtered = rows.filter((row) =>
-    Object.values(row).some((v) => String(v ?? '').trim().toLowerCase() === needle)
+  const filtered = rows.filter((rowVals: any[]) =>
+    rowVals.some((v) => String(v ?? '').trim().toLowerCase() === needle)
   );
-  const mapped = filtered.map((row) => mapByLetters(cols, row));
+  const mapped = filtered.map((rowVals) => mapByLetters(cols, rowVals));
   return { cols, rows: mapped };
 }
 
@@ -109,32 +110,18 @@ export async function fetchAdvancedByCode(sheetId: string, code: string, gid?: s
   if (!text.includes('google.visualization.Query.setResponse')) {
     throw new Error('Sheet nâng cao không công khai hoặc phản hồi không hợp lệ.');
   }
-  const { cols, rows } = (function parse(text: string){
-    const start = text.indexOf('{');
-    const end = text.lastIndexOf('}');
-    const json = JSON.parse(text.slice(start, end + 1));
-    const c = (json.table?.cols || []).map((x: any) => x.label || x.id || '');
-    const r = (json.table?.rows || []).map((rr: any) => {
-      const obj: Record<string, any> = {};
-      rr.c?.forEach((cell: any, idx: number) => {
-        const key = c[idx] || `col_${idx}`;
-        obj[key] = cell?.v ?? null;
-      });
-      return obj;
-    });
-    return { cols: c, rows: r };
-  })(text);
+  const { cols, rows } = parseGviz(text);
   const needle = String(code).trim().toLowerCase();
   const baseRows = (needle
-    ? rows.filter((row: Record<string, any>) => {
-        const byIndex = cols.map((col: string, i: number) => row[col]);
-        const codeVal = byIndex[1];
-        return String(codeVal ?? '').trim().toLowerCase() === needle;
-      })
+    ? rows.filter((rowVals: any[]) => String(rowVals[1] ?? '').trim().toLowerCase() === needle)
     : rows);
-  const mapped = baseRows.map((row: Record<string, any>) => {
-    const byIndex = cols.map((col: string, i: number) => row[col]);
-    return { 'Full name': byIndex[0] ?? null, 'Code': byIndex[1] ?? null, ...row } as Record<string, any>;
+  const mapped = baseRows.map((rowVals: any[]) => {
+    const mappedObj = mapByLetters(cols, rowVals);
+    // Giữ lại toàn bộ cặp label->value gốc để trang nâng cao tham chiếu theo label bài học
+    cols.forEach((label, idx) => {
+      if (label) mappedObj[label] = rowVals[idx] ?? null;
+    });
+    return mappedObj as Record<string, any>;
   });
   return { cols, rows: mapped };
 }

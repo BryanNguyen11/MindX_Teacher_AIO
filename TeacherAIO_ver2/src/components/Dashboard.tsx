@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogOut, RefreshCw, Link as LinkIcon, CheckCircle } from 'lucide-react';
+import { LogOut, RefreshCw, Link as LinkIcon, CheckCircle, ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
 import LiquidGlassCard from './LiquidGlassCard';
 import Sidebar from './Sidebar';
@@ -46,6 +46,27 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
   const [advRows, setAdvRows] = useState<Record<string, any>[]>([]);
   const [advError, setAdvError] = useState<string | null>(null);
   const ADV_SHEET_ID = '19uKKdBq3aZQ3dd2m3B_-Jk8RC7ffUdYRC25CM4zO8f4';
+
+  // Cấu hình link Google Forms cho tính năng "Cải thiện điểm"
+  // Lưu ý: điền URL tương ứng cho từng bài nếu có, để trống sẽ ẩn nút.
+  const FORM_LINKS: Record<string, string> = {
+    // Khớp với label trong Sheet hiện tại
+    'Lesson 1\n[kỹ năng trao đổi với PHHS]': 'https://forms.gle/HErPEqqNUoyWX5aP9',
+    'Lesson 2\n[Kỹ năng quan sát học viên]': 'https://docs.google.com/forms/d/e/1FAIpQLSfnUtOUnGBzNyfGIV1tvl_XO9UbVyHMDedHB1sznVwL1Fd_2g/viewform',
+    'Lesson 3\n[Kỹ năng trao đổi với học viên]': 'https://docs.google.com/forms/d/e/1FAIpQLSdemZdhF4zmXvPAyOQRZvVZyYw_u4DOuYLBStXOKUDqIb8GUg/viewform',
+    'Lesson 4\n[Định hướng & tạo động lực trong học tập]': 'https://forms.gle/QqavsiUDDrJWWtVK8',
+    'Lesson 5\n[Hướng dẫn tổ chức học sinh làm dự án cuối khóa]': 'https://forms.gle/iVTzyPXyJDFXV4hn6',
+    'Lesson 6\nHướng dẫn xây dựng bài giảng, giáo án sáng tạo': 'https://docs.google.com/forms/d/e/1FAIpQLScA88PTaQBGeq9bBGHZajxGvRzP_jkxlemEXPn1f7w06Hnsfw/viewform',
+    'Lesson 7\nỨng dụng AI đổi mới phương pháp và nâng cao hiệu quả giảng dạy': 'https://docs.google.com/forms/d/e/1FAIpQLSeBSTU2pLzd7zQyjnjR0MwH8rXE5rhnx_X-TWeAagTC-jZtbQ/viewform',
+    'Lesson 8\nHướng dẫn đánh giá, phản hồi kết quả học tập': 'https://forms.gle/5kx65SAyVysBJU7JA',
+    'Lesson 9': '',
+    // Các form bổ trợ AI
+    '[Bài tập] Hướng Dẫn Sử Dụng AI4Student cho Giáo Viên': 'https://docs.google.com/forms/d/e/1FAIpQLSeu9yIgdRcKCgPnHQJDO67Gz4s8f-gAc5yVtS30--BV_Hl0Tw/viewform',
+    '[Bài tập] Hướng Dẫn Sử Dụng AI4Teacher cho Giáo Viên': 'https://docs.google.com/forms/d/e/1FAIpQLSepfkGy05KQM0XZsVhgzfxEjtyGaYfWywr0ckpWHSLtyHI5_w/viewform',
+  };
+
+  // Toggle hiển thị danh sách cải thiện điểm
+  const [showImprove, setShowImprove] = useState<boolean>(false);
 
   useEffect(() => {
     let aborted = false;
@@ -193,6 +214,15 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
                 </Button>
               </div>
               {advError && <p className="mt-2 text-red-300">{advError}</p>}
+              {/* Nút mở danh sách cải thiện điểm cho các bài chưa đạt 10 và khác 0 */}
+              <div className="mt-3">
+                <Button
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => setShowImprove((v) => !v)}
+                >
+                  Cải thiện điểm ở các bài chưa đạt 10 và khác 0
+                </Button>
+              </div>
               {/* Thống kê: số bài điểm 0 và điểm trung bình (Điểm đánh giá) */}
               {advRows.length > 0 ? (
                 <div className="mt-4 bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30">
@@ -265,6 +295,50 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
                             return m ? m[0] : '—';
                           })()}
                         </div>
+                        {/* Inline cải thiện điểm: nếu điểm >0 và <10 và có form URL thì hiển thị nút */}
+                        {(() => {
+                          const raw = advRows[0]?.[label];
+                          const m = String(raw ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
+                          const score = m ? Number(m[0]) : NaN;
+                          if (Number.isNaN(score) || score <= 0 || score >= 10) return null;
+                          // tìm URL form: thử chính xác, thử theo tiền tố 'Lesson X', hoặc theo chứa
+                          const short = label.split('\n')[0];
+                          let formUrl = FORM_LINKS[label] || FORM_LINKS[short];
+                          if (!formUrl) {
+                            const found = Object.entries(FORM_LINKS).find(([k, v]) => k.startsWith(short) && v);
+                            formUrl = found ? found[1] : '';
+                          }
+                          if (!formUrl) return null;
+                          // Edpuzzle join link (same class code used elsewhere)
+                          const edpuzzleClass = 'apfosji';
+                          const edpuzzleUrl = `https://edpuzzle.com/join/${edpuzzleClass}`;
+                          return (
+                            <div className="mt-3">
+                              <div className="flex gap-3">
+                                <a
+                                  href={formUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  aria-label={`Mở Google Form cho ${label}`}
+                                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-red font-semibold shadow-2xl transform transition-transform duration-150 hover:scale-105"
+                                >
+                                  <LinkIcon className="w-4 h-4 opacity-95" />
+                                  <span>Cải Thiện Điểm</span>
+                                </a>
+                                <a
+                                  href={edpuzzleUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  aria-label={`Mở Edpuzzle cho ${label}`}
+                                  className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-sky-500 text-white font-semibold shadow-lg hover:scale-105"
+                                >
+                                  <ExternalLink className="w-4 h-4 opacity-95" />
+                                  <span>Edpuzzle</span>
+                                </a>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     ))}
                   </div>
@@ -330,6 +404,64 @@ export default function Dashboard({ stats, onLogout, backgroundImage, userLmsCod
                           <div className="text-xs text-black/60">Mã lớp: {classCode}</div>
                         </div>
                       ));
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Khôi phục: Liên kết Google Forms cải thiện điểm (chỉ hiển thị nếu điểm > 0 và < 10) */}
+            {activePage === 'advanced' && advRows.length > 0 && showImprove && (
+              <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30">
+                <div className="text-black/80 text-sm mb-3">Cải thiện điểm — gửi lại bài qua Google Forms</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {(() => {
+                    const row = advRows[0] as Record<string, any>;
+                    const toNum = (v: any) => {
+                      const m = String(v ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
+                      return m ? Number(m[0]) : NaN;
+                    };
+                    const labels = [
+                      'Lesson 1\n[kỹ năng trao đổi với PHHS]',
+                      'Lesson 2\n[Kỹ năng quan sát học viên]',
+                      'Lesson 3\n[Kỹ năng trao đổi với học viên]',
+                      'Lesson 4\n[Định hướng & tạo động lực trong học tập]',
+                      'Lesson 5\n[Hướng dẫn tổ chức học sinh làm dự án cuối khóa]',
+                      'Lesson 6\nHướng dẫn xây dựng bài giảng, giáo án sáng tạo',
+                      'Lesson 7\nỨng dụng AI đổi mới phương pháp và nâng cao hiệu quả giảng dạy',
+                      'Lesson 8\nHướng dẫn đánh giá, phản hồi kết quả học tập',
+                      'Lesson 9',
+                      // Bổ sung các form AI nếu cần kích hoạt cải thiện độc lập
+                      '[Bài tập] Hướng Dẫn Sử Dụng AI4Student cho Giáo Viên]',
+                      '[Bài tập] Hướng Dẫn Sử Dụng AI4Teacher cho Giáo Viên]',
+                    ];
+                    return labels
+                      .filter((lbl) => {
+                        const score = toNum(row[lbl]);
+                        // Điều kiện cải thiện: >0 và <10
+                        return !Number.isNaN(score) && score > 0 && score < 10;
+                      })
+                      .map((lbl) => {
+                        const formUrl = FORM_LINKS[lbl];
+                        if (!formUrl) return null; // Không có link thì bỏ qua
+                        return (
+                          <div key={lbl} className="flex flex-col gap-2 border border-white/40 rounded-xl p-3 bg-white/30">
+                            <div className="text-sm whitespace-pre-line text-black/80">{lbl}</div>
+                            <div className="flex gap-2">
+                              <a
+                                href={formUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
+                                title="Gửi lại bài để cải thiện điểm"
+                              >
+                                Mở Google Form
+                              </a>
+                            </div>
+                            <div className="text-xs text-black/60">Điều kiện: điểm hiện tại &gt; 0 và &lt; 10</div>
+                          </div>
+                        );
+                      })
+                      .filter(Boolean);
                   })()}
                 </div>
               </div>
