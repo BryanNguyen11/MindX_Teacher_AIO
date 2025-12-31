@@ -144,10 +144,23 @@ export default function LiquidGlassCard({ stats, sheet }: LiquidGlassCardProps) 
     String(s ?? '')
       .normalize('NFKD')
       .replace(/\p{Diacritic}/gu, '')
-  .replace(/[^\p{L}\p{N} ]+/gu, '')
+      .replace(/[^\p{L}\p{N} ]+/gu, '')
       .toLowerCase()
       .replace(/\s+/g, ' ')
       .trim();
+
+  // Các chú thích cho một số chỉ số — sẽ hiển thị tooltip khi hover hoặc alert khi click (mobile)
+  const HELP_TEXT: Record<string, string> = {
+    'Điểm trung bình chuyên môn': 'Điểm trung bình chuyên môn: trung bình cộng của 3 cột: Technical, Trial, Sư phạm.',
+    Technical: 'Technical: Điểm kiểm tra chuyên môn hàng tháng.',
+    Trial: 'Trial: Điểm bài kiểm tra Quy trình trải nghiệm.',
+    'Sư phạm': 'Sư phạm: Trung bình cộng của điểm QC và điểm đào tạo nâng cao.',
+  };
+  // Build a normalized lookup to match headers with/without diacritics/case
+  const HELP_MAP: Record<string, string> = Object.fromEntries(
+    Object.entries(HELP_TEXT).map(([k, v]) => [normalize(k), v])
+  );
+  const getHelp = (label: string) => HELP_MAP[normalize(String(label))];
   return (
     <div className="relative w-full max-w-2xl mx-auto">
       {/* Frosted glass card with matte finish */}
@@ -192,8 +205,17 @@ export default function LiquidGlassCard({ stats, sheet }: LiquidGlassCardProps) 
                     let val: any;
                     // nếu sheet.__cols là letters, tìm letter tương ứng trong HEADER_BY_LETTER
                     if (isLetters) {
-                      const letterEntry = Object.entries(HEADER_BY_LETTER).find(([, v]) => normalize(v) === normalize(keepHdr));
-                      const letterKey = letterEntry ? letterEntry[0] : undefined;
+                      // Prefer mapping by column index because sheet.__cols preserves order.
+                      const idxInSheetHeaders = SHEET_HEADERS.findIndex((h) => normalize(h) === normalize(keepHdr));
+                      let letterKey: string | undefined;
+                      if (idxInSheetHeaders >= 0 && cols[idxInSheetHeaders]) {
+                        letterKey = cols[idxInSheetHeaders];
+                      }
+                      // fallback to header_by_letter if index mapping fails
+                      if (!letterKey) {
+                        const letterEntry = Object.entries(HEADER_BY_LETTER).find(([, v]) => normalize(v) === normalize(keepHdr));
+                        letterKey = letterEntry ? letterEntry[0] : undefined;
+                      }
                       if (letterKey && sheet[letterKey] !== undefined) val = sheet[letterKey];
                       else if (sheet[keepHdr] !== undefined) val = sheet[keepHdr];
                       else val = getField(sheet, keepHdr);
@@ -202,9 +224,27 @@ export default function LiquidGlassCard({ stats, sheet }: LiquidGlassCardProps) 
                       if (sheet[keepHdr] !== undefined) val = sheet[keepHdr];
                       else val = getField(sheet, keepHdr);
                     }
+                    const help = getHelp(keepHdr);
                     return (
                       <div key={`${keepHdr}-${idx}`} className="bg-white/10 rounded-xl p-3 border border-white/20">
-                        <div className="text-black/60 text-xs mb-1 whitespace-pre-line">{keepHdr}</div>
+                        <div className="flex items-center gap-2 justify-between">
+                          <div className="text-black/60 text-xs mb-1 whitespace-pre-line">{keepHdr}</div>
+                          {help && (
+                            <button
+                              type="button"
+                              onClick={() => window.alert(help)}
+                              title={help}
+                              className="ml-2 text-sm bg-white text-black rounded-full w-6 h-6 flex items-center justify-center border border-black/10 shadow-sm"
+                              aria-label={`Giải thích ${keepHdr}`}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9" />
+                                <path d="M12 8v4" />
+                                <circle cx="12" cy="16" r="0.8" fill="currentColor" stroke="none" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                         <div className="text-black text-lg">{fmt(keepHdr, val)}</div>
                       </div>
                     );
