@@ -49,21 +49,31 @@ export default function LiquidGlassCard({ stats, sheet }: LiquidGlassCardProps) 
   // Simple formatter (TP with separators)
   const fmt = (label: string, v: any): string => {
     if (v == null || v === '') return '—';
-    const num = Number(String(v).replace(/,/g, '').match(/-?\d+(\.\d+)?/)?.[0] ?? NaN);
-    if (label === 'TP' && !Number.isNaN(num)) return num.toLocaleString();
+    const sRaw = String(v).trim();
+    // treat lone dash as zero
+    const s = sRaw === '-' ? '0' : sRaw;
+    // If value already includes a percent sign, show as-is
+    if (s.includes('%')) return s;
+    const match = String(s).replace(/,/g, '').match(/-?\d+(\.\d+)?/);
+    const num = Number(match?.[0] ?? NaN);
+
+    // Completion rate: show as percentage
+    if (/completion rate/i.test(label)) {
+      if (Number.isNaN(num)) return '—';
+      let pct = num;
+      // if value looks like a fraction (0-1), convert to percent
+      if (Math.abs(pct) <= 1) pct = pct * 100;
+      // format: integer when whole, else one decimal
+      const isWhole = Math.abs(pct - Math.round(pct)) < 1e-9;
+      return `${isWhole ? Math.round(pct) : pct.toFixed(1)}%`;
+    }
+
+    // TP keeps thousand separators
+    if (/^TP$/i.test(label) && !Number.isNaN(num)) return num.toLocaleString();
+
     return String(v);
   };
-  // Columns to hide from personal stats (per user request)
-  const HIDDEN = new Set([
-    'TP',
-    'Technical',
-    'Điểm đánh giá',
-    'Điểm trung bình chuyên môn',
-    'Trial',
-    'Sư Phạm',
-    'Sư phạm',
-    'Đánh giá',
-  ]);
+  // Không ẩn bất kỳ cột nào, hiển thị toàn bộ
   // Ordered sheet headers to display (use this exact order/labels)
   const SHEET_HEADERS = [
     'Full name',
@@ -114,6 +124,30 @@ export default function LiquidGlassCard({ stats, sheet }: LiquidGlassCardProps) 
     U: 'Xếp loại',
     V: 'Đánh giá',
   };
+  // Chỉ giữ những trường sau (theo yêu cầu) và theo thứ tự này
+  const KEEP_HEADERS = [
+    'Khối',
+    'Status',
+    'CR45',
+    'TP',
+    'Completion rate',
+    'Chỉ số chậm/ không hoàn thành DL',
+    'Điểm trung bình chuyên môn',
+    'Technical',
+    'Trial',
+    'Sư phạm',
+    'Điểm đánh giá\n(Max = 5)',
+    'Xếp loại',
+    'Đánh giá',
+  ];
+  const normalize = (s = '') =>
+    String(s ?? '')
+      .normalize('NFKD')
+      .replace(/\p{Diacritic}/gu, '')
+  .replace(/[^\p{L}\p{N} ]+/gu, '')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
   return (
     <div className="relative w-full max-w-2xl mx-auto">
       {/* Frosted glass card with matte finish */}
@@ -153,24 +187,28 @@ export default function LiquidGlassCard({ stats, sheet }: LiquidGlassCardProps) 
                 {(() => {
                   const cols = (sheet.__cols || SHEET_HEADERS) as string[];
                   const isLetters = Array.isArray(cols) && cols.length > 0 && cols.every((h) => /^[A-Z]$/.test(h));
-                  const baseList = isLetters ? cols : cols;
-                  return baseList
-                    .map((rawHdr: string, i: number) => {
-                      const letterKey = isLetters ? rawHdr : undefined;
-                      const displayLabel = letterKey ? (HEADER_BY_LETTER[letterKey] || letterKey) : rawHdr;
-                      return { letterKey, displayLabel, idx: i };
-                    })
-                    .filter(({ displayLabel }) => displayLabel && displayLabel !== 'Full name' && displayLabel !== 'Code' && !HIDDEN.has(displayLabel) && !/^tp level/i.test(displayLabel))
-                    .map(({ letterKey, displayLabel, idx }) => {
-                      const directVal = letterKey && sheet[letterKey] !== undefined ? sheet[letterKey] : sheet[displayLabel];
-                      const val = directVal !== undefined ? directVal : getField(sheet, displayLabel);
-                      return (
-                        <div key={`${displayLabel}-${idx}`} className="bg-white/10 rounded-xl p-3 border border-white/20">
-                          <div className="text-black/60 text-xs mb-1 whitespace-pre-line">{displayLabel}</div>
-                          <div className="text-black text-lg">{fmt(displayLabel, val)}</div>
-                        </div>
-                      );
-                    });
+                  // Dùng KEEP_HEADERS để đảm bảo thứ tự và chỉ hiển thị các trường cần giữ
+                  return KEEP_HEADERS.map((keepHdr, idx) => {
+                    let val: any;
+                    // nếu sheet.__cols là letters, tìm letter tương ứng trong HEADER_BY_LETTER
+                    if (isLetters) {
+                      const letterEntry = Object.entries(HEADER_BY_LETTER).find(([, v]) => normalize(v) === normalize(keepHdr));
+                      const letterKey = letterEntry ? letterEntry[0] : undefined;
+                      if (letterKey && sheet[letterKey] !== undefined) val = sheet[letterKey];
+                      else if (sheet[keepHdr] !== undefined) val = sheet[keepHdr];
+                      else val = getField(sheet, keepHdr);
+                    } else {
+                      // nếu không phải letters, đọc theo header tên (hoặc dò tìm bằng getField)
+                      if (sheet[keepHdr] !== undefined) val = sheet[keepHdr];
+                      else val = getField(sheet, keepHdr);
+                    }
+                    return (
+                      <div key={`${keepHdr}-${idx}`} className="bg-white/10 rounded-xl p-3 border border-white/20">
+                        <div className="text-black/60 text-xs mb-1 whitespace-pre-line">{keepHdr}</div>
+                        <div className="text-black text-lg">{fmt(keepHdr, val)}</div>
+                      </div>
+                    );
+                  });
                 })()}
               </div>
             </div>
